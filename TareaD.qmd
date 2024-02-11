@@ -1,0 +1,100 @@
+#1.Tomando el PIB de cada país, GDP, contenido en la tabla global_economy, grafique el PIB per cápita a lo largo del tiempo. ¿Cómo ha sido la evolución de la economía de los países en el tiempo? ¿Cuál país tiene el mayor PIB per cápita? (Les recomiendo quitar la leyenda del gráfico, incluyendo theme(legend.position = "none"))
+```{r}
+library("ggplot2")
+
+p1 <- ggplot(global_economy, aes(x = Year, y = GDP, color = Country)) + 
+  geom_line() +
+  theme(legend.position = "none") +
+  ylab("PIB per capita") + 
+  xlab("Year")
+p1
+```
+```{r}
+maxPIB<- max(global_economy$GDP)
+maxPIBpc <- global_economy$Country[which.max(global_economy$GDP)]
+maxPIBpc
+```
+# Se puede observar un crecimiento económico a lo largo de los años en todos los países (en general).
+
+# 2. Grafique las siguientes series de tiempo y transfórmelas y/o ajústelas si lo considera necesario. ¿Qué efecto tuvo la transformación?
+
+#PIB de EEUU & Méx, de global_economy.
+```{r}
+ge <- global_economy %>% 
+  filter(Country == "United States" | Country == "Mexico")
+  # filter(Country %in% c("United States", "Mexico"))
+
+p3 <- ggplot(ge) + aes(x = Year, y = GDP, color = Country) + 
+  geom_line()
+ 
+p3
+```
+#Demanda de electricidad en el estado de Victoria (Australia), de vic_elec.
+
+```{r}
+ggplot(data = vic_elec, aes(x = Date, y = Demand)) +
+  geom_line() +
+  ggtitle("Demanda de Electricidad en Victoria, Australia")
+
+```
+#¿Es útil realizar una transformación de Box-Cox a los datos canadian_gas? ¿Por qué sí o por qué no?
+#Podría ser útil, ya que al observar los datos se puede ver que hay datos que se encuentran en una tendencia de estacionalidad y esto puede ayudar a eliminarlo.
+```{r}
+canadian_gas
+```
+
+#El dataset fma::plastics tiene información de las ventas mensuales (medidas en miles) del producto A para un productor de plásticos, a lo largo de cinco años.
+#a) Grafique la serie de tiempo para el producto A. ¿Identifica algún componente de tendencia-ciclo y/o estacional?
+```{r}
+library(fma)
+data("plastics")
+plastics |> 
+  autoplot()
+```
+
+#Tiene una tendencia alcista.
+
+
+#b) Utilice una descomposición clásica multiplicativa para calcular el componente de tendencia y estacional.¿Los resultados coinciden con su respuesta al inciso i)? Calcule y grafique los datos desestacionalizados.
+```{r}
+tab <- as_tsibble(fma::plastics)
+plastics_decomp <- tab |> 
+model(
+    clasica = classical_decomposition(value, 
+                                      type = "multiplicative")
+  )
+plastic <- plastics_decomp |> 
+  components()
+
+plastic
+```
+```{r}
+
+des_est <- plastic |>
+  autoplot((season_adjust))
+
+des_est
+```
+#No coinciden.
+```{r}
+tab2 <- as_tsibble(fma::plastics)
+plastics_decomp2 <- tab |> 
+model(
+    clasica2 = classical_decomposition(value, 
+                                      type = "multiplicative")
+  )
+plastic2 <- plastics_decomp2 |> 
+  components()
+
+plastic2
+```
+```{r}
+plastic2 |> 
+  autoplot()
+```
+#Cambie, manualmente, una observación para que sea un outlier (p. ej., sume 500 a una observación). Vuelva a estimar los datos desestacionalizados. ¿Cuál fue el efecto de ese outlier? ¿Hace alguna diferencia que el outlier se encuentre cerca del final de la serie o más alrededor del centro?
+```{r}
+plastic$value <- plastic$value + 500
+plastic$value
+```
+#incremento los valores, por lo que la serie comienza de más arriba.
